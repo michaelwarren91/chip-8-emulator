@@ -1,3 +1,6 @@
+use super::Instruction;
+use super::instruction_handlers;
+
 const MEMORY_SIZE: usize = 4096;
 const PROGRAM_START_ADDRESS: usize = 0x200;
 const FONT_START_ADDRESS: usize = 0x000;
@@ -28,7 +31,7 @@ const FONT_DATA: [[u8; 5]; 16] = [
 
 pub struct Cpu {
     // Registers
-    general_registers: [u8; 16],
+    pub(super) general_registers: [u8; 16],
     index_register: u16,
     delay_timer: u8,
     sound_timer: u8,
@@ -56,8 +59,21 @@ impl Cpu {
             panic!("ROM exeeds the maximum supported size");
         }
 
-        let destination_slice = &mut self.ram[PROGRAM_START_ADDRESS..(PROGRAM_START_ADDRESS + rom_size)];
+        let destination_slice =
+            &mut self.ram[PROGRAM_START_ADDRESS..(PROGRAM_START_ADDRESS + rom_size)];
         destination_slice.copy_from_slice(rom_data);
+    }
+
+    pub fn step(&mut self) {
+        if self.input_wait_register.is_some() {
+            return;
+        }
+
+        let opcode = self.fetch_instruction();
+        self.program_counter += 2;
+
+        let instruction = self.decode_instruction(opcode);
+        self.execute_instruction(instruction);
     }
 
     fn write_default_sprite(&mut self, number: usize, rows: [u8; 5]) {
@@ -65,6 +81,187 @@ impl Cpu {
         let write_address = start_address + 5 * number;
 
         self.ram[write_address..(write_address + 5)].copy_from_slice(&rows);
+    }
+
+    fn fetch_instruction(&self) -> u16 {
+        let higher_byte = (self.ram[self.program_counter as usize] as u16) << 1;
+        let lower_byte = self.ram[(self.program_counter + 1) as usize] as u16;
+
+        higher_byte | lower_byte
+    }
+
+    fn decode_instruction(&self, opcode: u16) -> Instruction {
+        panic!("Unknown instruction: 0x{:04X}", opcode);
+    }
+
+    fn execute_instruction(&mut self, instruction: Instruction) {
+        match instruction {
+            Instruction::SystemCall { address } => {
+                instruction_handlers::execute_system_call(self, address)
+            }
+
+            Instruction::ClearScreen => instruction_handlers::execute_clear_screen(self),
+
+            Instruction::Return => instruction_handlers::execute_return(self),
+
+            Instruction::Jump { address } => instruction_handlers::execute_jump(self, address),
+
+            Instruction::Call { address } => instruction_handlers::execute_call(self, address),
+
+            Instruction::SkipIfRegisterEqualsValue { register, value } => {
+                instruction_handlers::execute_skip_if_register_equals_value(self, register, value)
+            }
+
+            Instruction::SkipIfRegisterNotEqualsValue { register, value } => {
+                instruction_handlers::execute_skip_if_register_not_equals_value(
+                    self, register, value,
+                )
+            }
+
+            Instruction::SkipIfRegistersEqual {
+                register_a,
+                register_b,
+            } => {
+                instruction_handlers::execute_skip_if_registers_equal(self, register_a, register_b)
+            }
+
+            Instruction::LoadByte { register, value } => {
+                instruction_handlers::execute_load_byte(self, register, value)
+            }
+
+            Instruction::AddByte { register, value } => {
+                instruction_handlers::execute_add_byte(self, register, value)
+            }
+
+            Instruction::CopyRegister {
+                destination_register,
+                source_register,
+            } => instruction_handlers::execute_copy_register(
+                self,
+                destination_register,
+                source_register,
+            ),
+
+            Instruction::Or {
+                destination_register,
+                source_register,
+            } => instruction_handlers::execute_or(self, destination_register, source_register),
+
+            Instruction::And {
+                destination_register,
+                source_register,
+            } => instruction_handlers::execute_and(self, destination_register, source_register),
+
+            Instruction::Xor {
+                destination_register,
+                source_register,
+            } => instruction_handlers::execute_xor(self, destination_register, source_register),
+
+            Instruction::AddRegisters {
+                destination_register,
+                source_register,
+            } => instruction_handlers::execute_add_registers(
+                self,
+                destination_register,
+                source_register,
+            ),
+
+            Instruction::SubtractRegisters {
+                destination_register,
+                source_register,
+            } => instruction_handlers::execute_subtract_registers(
+                self,
+                destination_register,
+                source_register,
+            ),
+
+            Instruction::ShiftRight {
+                destination_register,
+            } => instruction_handlers::execute_shift_right(self, destination_register),
+
+            Instruction::SubtractFromRegister {
+                destination_register,
+                source_register,
+            } => instruction_handlers::execute_subtract_from_register(
+                self,
+                destination_register,
+                source_register,
+            ),
+
+            Instruction::ShiftLeft {
+                destination_register,
+            } => instruction_handlers::execute_shift_left(self, destination_register),
+
+            Instruction::SkipIfRegistersNotEqual {
+                register_a,
+                register_b,
+            } => instruction_handlers::execute_skip_if_registers_not_equal(
+                self, register_a, register_b,
+            ),
+
+            Instruction::LoadIndexRegister { address } => {
+                instruction_handlers::execute_load_index_register(self, address)
+            }
+
+            Instruction::JumpWithOffset { offset } => {
+                instruction_handlers::execute_jump_with_offset(self, offset)
+            }
+
+            Instruction::RandomByte {
+                destination_register,
+                mask,
+            } => instruction_handlers::execute_random_byte(self, destination_register, mask),
+
+            Instruction::DrawSprite {
+                x_register,
+                y_register,
+                height,
+            } => instruction_handlers::execute_draw_sprite(self, x_register, y_register, height),
+
+            Instruction::SkipIfKeyPressed { register } => {
+                instruction_handlers::execute_skip_if_key_pressed(self, register)
+            }
+
+            Instruction::SkipIfKeyNotPressed { register } => {
+                instruction_handlers::execute_skip_if_key_not_pressed(self, register)
+            }
+
+            Instruction::ReadDelayTimer {
+                destination_register,
+            } => instruction_handlers::execute_read_delay_timer(self, destination_register),
+
+            Instruction::WaitForKeyPress {
+                destination_register,
+            } => instruction_handlers::execute_wait_for_key_press(self, destination_register),
+
+            Instruction::SetDelayTimer { source_register } => {
+                instruction_handlers::execute_set_delay_timer(self, source_register)
+            }
+
+            Instruction::SetSoundTimer { source_register } => {
+                instruction_handlers::execute_set_sound_timer(self, source_register)
+            }
+
+            Instruction::AddToIndexRegister { source_register } => {
+                instruction_handlers::execute_add_to_index_register(self, source_register)
+            }
+
+            Instruction::LoadFontAddress { register } => {
+                instruction_handlers::execute_load_font_address(self, register)
+            }
+
+            Instruction::StoreBcd { source_register } => {
+                instruction_handlers::execute_store_bcd(self, source_register)
+            }
+
+            Instruction::StoreRegisters { final_register } => {
+                instruction_handlers::execute_store_registers(self, final_register)
+            }
+
+            Instruction::LoadRegisters { final_register } => {
+                instruction_handlers::execute_load_registers(self, final_register)
+            }
+        }
     }
 }
 
@@ -126,6 +323,5 @@ mod tests {
         // Create dummy program that takes the entire RAM length
         let program = [0u8; MEMORY_SIZE];
         cpu.load_rom(&program);
-
     }
 }
