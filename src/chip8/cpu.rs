@@ -1,3 +1,5 @@
+const MEMORY_SIZE: usize = 4096;
+const PROGRAM_START_ADDRESS: usize = 0x200;
 const FONT_START_ADDRESS: usize = 0x000;
 const FONT_DATA: [[u8; 5]; 16] = [
     // Data for 0 (1 = pixel on, 0 = pixel off). All following numbers follow the same format
@@ -46,6 +48,18 @@ pub struct Cpu {
 }
 
 impl Cpu {
+    pub fn load_rom(&mut self, rom_data: &[u8]) {
+        let max_program_size = 0xFFF - PROGRAM_START_ADDRESS;
+        let rom_size = rom_data.len();
+
+        if rom_size > max_program_size {
+            panic!("ROM exeeds the maximum supported size");
+        }
+
+        let destination_slice = &mut self.ram[PROGRAM_START_ADDRESS..(PROGRAM_START_ADDRESS + rom_size)];
+        destination_slice.copy_from_slice(rom_data);
+    }
+
     fn write_default_sprite(&mut self, number: usize, rows: [u8; 5]) {
         let start_address: usize = FONT_START_ADDRESS;
         let write_address = start_address + 5 * number;
@@ -102,5 +116,16 @@ mod tests {
                 assert_eq!(cpu.ram[address], font_data[byte_index]);
             }
         }
+    }
+
+    #[test]
+    #[should_panic]
+    fn load_program_invalid_size() {
+        let mut cpu = Cpu::default();
+
+        // Create dummy program that takes the entire RAM length
+        let program = [0u8; MEMORY_SIZE];
+        cpu.load_rom(&program);
+
     }
 }
