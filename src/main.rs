@@ -1,30 +1,13 @@
-use core::time;
-use std::thread::sleep;
-
 mod chip8;
+mod emulator;
+mod frontends;
+
+use emulator::Emulator;
 
 fn main() {
-    let mut cpu = chip8::Cpu::default();
+    let cpu = chip8::Cpu::default();
+    let frontend = frontends::runtime::RuntimeFrontend::default();
 
-    // Test IBM loading program directly into cpu and attempting to execute program
-    match hex::decode(
-        "00e0a22a600c6108d01f7009a239d01fa2487008d01f7004a257d01f7008a266d01f7008a275d01f1228ff00ff003c003c003c003c00ff00ffff00ff0038003f003f003800ff00ff8000e000e00080008000e000e00080f800fc003e003f003b003900f800f8030007000f00bf00fb00f300e30043e000e0008000800080008000e000e0",
-    ) {
-        Ok(bytes) => {
-            cpu.load_rom(&bytes);
-
-            loop {
-                for _ in 0..10 {
-                    cpu.step();
-                }
-
-                print!("\x1B[2J\x1B[1;1H");
-                cpu.display.debug_print_buffer();
-
-                let wait_time_millis = time::Duration::from_millis(16);
-                sleep(wait_time_millis);
-            }
-        }
-        Err(error) => println!("Error reading bytes: {error}"),
-    }
+    let mut emulator = Emulator::new(cpu, frontend);
+    emulator.run();
 }
