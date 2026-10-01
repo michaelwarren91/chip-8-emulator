@@ -6,7 +6,7 @@ const MEMORY_SIZE: usize = 4096;
 const PROGRAM_START_ADDRESS: usize = 0x200;
 const FONT_START_ADDRESS: usize = 0x000;
 const FONT_DATA: [[u8; 5]; 16] = [
-    // Data for 0 (1 = pixel on, 0 = pixel off). All following numbers follow the same format
+    // Data for the number 0 (1 = pixel on, 0 = pixel off). All following numbers follow the same format
     // 11110000 - 0xF0
     // 10010000 - 9x90
     // 10010000 - 0x90
