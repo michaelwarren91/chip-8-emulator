@@ -11,7 +11,7 @@ impl Display {
             framebuffer: [false; DISPLAY_WIDTH * DISPLAY_HEIGHT]
         }
     }
-    
+
     pub fn draw_sprite(&mut self, start_x: usize, start_y: usize, sprite: &Vec<u8>) -> bool {
         let mut reset_pixel = false;
 
@@ -30,6 +30,10 @@ impl Display {
         }
         
         reset_pixel
+    }
+
+    pub fn clear(&mut self) {
+        self.framebuffer.fill(false);
     }
 
     pub fn get_framebuffer(&self) -> &[bool; DISPLAY_WIDTH * DISPLAY_HEIGHT] {
