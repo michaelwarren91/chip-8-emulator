@@ -1,5 +1,6 @@
 use super::Instruction;
 use super::instruction_handlers;
+use super::Display;
 
 const MEMORY_SIZE: usize = 4096;
 const PROGRAM_START_ADDRESS: usize = 0x200;
@@ -39,11 +40,11 @@ pub struct Cpu {
     stack_pointer: u8,
 
     // Memory
-    ram: [u8; 4096],
+    ram: [u8; MEMORY_SIZE],
     subroutine_stack: [u16; 16],
 
     // Rendering
-    framebuffer: [bool; 2048],
+    display: Display,
 
     // Input
     input_state: u16,
@@ -275,10 +276,10 @@ impl Default for Cpu {
             program_counter: 0x200,
             stack_pointer: 0,
 
-            ram: [0; 4096],
+            ram: [0; MEMORY_SIZE],
             subroutine_stack: [0; 16],
 
-            framebuffer: [false; 2048],
+            display: Display::new(),
 
             input_state: 0,
             input_wait_register: None,
