@@ -5,7 +5,7 @@ pub(super) fn execute_system_call(cpu: &mut Cpu, address: u16) {
 }
 
 pub(super) fn execute_clear_screen(cpu: &mut Cpu) {
-    todo!();
+    cpu.display.clear();
 }
 
 pub(super) fn execute_return(cpu: &mut Cpu) {
@@ -13,7 +13,7 @@ pub(super) fn execute_return(cpu: &mut Cpu) {
 }
 
 pub(super) fn execute_jump(cpu: &mut Cpu, address: u16) {
-    todo!();
+    cpu.program_counter = address;
 }
 
 pub(super) fn execute_call(cpu: &mut Cpu, address: u16) {
@@ -33,11 +33,11 @@ pub(super) fn execute_skip_if_registers_equal(cpu: &mut Cpu, register_a: u8, reg
 }
 
 pub(super) fn execute_load_byte(cpu: &mut Cpu, register: u8, value: u8) {
-    todo!();
+    cpu.general_registers[register as usize] = value;
 }
 
 pub(super) fn execute_add_byte(cpu: &mut Cpu, register: u8, value: u8) {
-    todo!();
+    cpu.general_registers[register as usize] += value;
 }
 
 pub(super) fn execute_copy_register(cpu: &mut Cpu, destination_register: u8, source_register: u8) {
@@ -89,7 +89,7 @@ pub(super) fn execute_skip_if_registers_not_equal(cpu: &mut Cpu, register_a: u8,
 }
 
 pub(super) fn execute_load_index_register(cpu: &mut Cpu, address: u16) {
-    todo!();
+    cpu.index_register = address;
 }
 
 pub(super) fn execute_jump_with_offset(cpu: &mut Cpu, offset: u16) {
@@ -101,7 +101,16 @@ pub(super) fn execute_random_byte(cpu: &mut Cpu, destination_register: u8, mask:
 }
 
 pub(super) fn execute_draw_sprite(cpu: &mut Cpu, x_register: u8, y_register: u8, height: u8) {
-    todo!();
+    let x = cpu.general_registers[x_register as usize];
+    let y = cpu.general_registers[y_register as usize];
+
+    let start = cpu.index_register as usize;
+    let sprite = (start..(start + height as usize))
+        .map(|i| cpu.ram[i])
+        .collect();
+
+    let pixels_erased = cpu.display.draw_sprite(x as usize, y as usize, &sprite);
+    cpu.general_registers[15] = if pixels_erased { 1 } else { 0 };
 }
 
 pub(super) fn execute_skip_if_key_pressed(cpu: &mut Cpu, register: u8) {

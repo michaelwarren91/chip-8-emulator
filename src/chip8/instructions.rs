@@ -1,6 +1,9 @@
 use std::fmt;
 
 pub enum Instruction {
+    Unknown {
+        opcode: u16,
+    },
     SystemCall {
         address: u16,
     },
@@ -123,6 +126,7 @@ pub enum Instruction {
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Unknown { opcode } => write!(f, "UNKNOWN opcode={opcode}"),
             Self::SystemCall { address } => write!(f, "SYS 0x{:X}", address),
             Self::ClearScreen => write!(f, "CLS"),
             Self::Return => write!(f, "RET"),

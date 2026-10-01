@@ -3,6 +3,6 @@ mod display;
 mod instruction_handlers;
 mod instructions;
 
-use display::Display;
 pub use cpu::Cpu;
+use display::Display;
 pub use instructions::Instruction;

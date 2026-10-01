@@ -1,6 +1,6 @@
+use super::Display;
 use super::Instruction;
 use super::instruction_handlers;
-use super::Display;
 
 const MEMORY_SIZE: usize = 4096;
 const PROGRAM_START_ADDRESS: usize = 0x200;
@@ -33,18 +33,18 @@ const FONT_DATA: [[u8; 5]; 16] = [
 pub struct Cpu {
     // Registers
     pub(super) general_registers: [u8; 16],
-    index_register: u16,
+    pub(super) index_register: u16,
     delay_timer: u8,
     sound_timer: u8,
-    program_counter: u16,
+    pub(super) program_counter: u16,
     stack_pointer: u8,
 
     // Memory
-    ram: [u8; MEMORY_SIZE],
+    pub(super) ram: [u8; MEMORY_SIZE],
     subroutine_stack: [u16; 16],
 
     // Rendering
-    display: Display,
+    pub display: Display,
 
     // Input
     input_state: u16,
@@ -85,18 +85,51 @@ impl Cpu {
     }
 
     fn fetch_instruction(&self) -> u16 {
-        let higher_byte = (self.ram[self.program_counter as usize] as u16) << 1;
+        let higher_byte = (self.ram[self.program_counter as usize] as u16) << 8;
         let lower_byte = self.ram[(self.program_counter + 1) as usize] as u16;
 
         higher_byte | lower_byte
     }
 
     fn decode_instruction(&self, opcode: u16) -> Instruction {
-        panic!("Unknown instruction: 0x{:04X}", opcode);
+        let address = opcode & 0x0FFF;
+        let n = (opcode & 0x000F) as u8;
+        let x = ((opcode & 0x0F00) >> 8) as u8;
+        let y = ((opcode & 0x00F0) >> 4) as u8;
+        let byte = (opcode & 0x00FF) as u8;
+
+        match opcode & 0xF000 {
+            0x0000 => match opcode {
+                0x00E0 => Instruction::ClearScreen,
+                0x00EE => Instruction::Return,
+                _ => Instruction::SystemCall { address: address },
+            },
+
+            0x1000 => Instruction::Jump { address: address },
+            0x6000 => Instruction::LoadByte {
+                register: x,
+                value: byte,
+            },
+            0x7000 => Instruction::AddByte {
+                register: x,
+                value: byte,
+            },
+            0xA000 => Instruction::LoadIndexRegister { address: address },
+            0xD000 => Instruction::DrawSprite {
+                x_register: x,
+                y_register: y,
+                height: n,
+            },
+            _ => Instruction::Unknown { opcode: opcode },
+        }
     }
 
     fn execute_instruction(&mut self, instruction: Instruction) {
         match instruction {
+            Instruction::Unknown { opcode } => {
+                panic!("Unknown instruction reached: opcode={opcode}")
+            }
+
             Instruction::SystemCall { address } => {
                 instruction_handlers::execute_system_call(self, address)
             }

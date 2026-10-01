@@ -18,6 +18,9 @@ fn main() {
                     cpu.step();
                 }
 
+                print!("\x1B[2J\x1B[1;1H");
+                cpu.display.debug_print_buffer();
+
                 let wait_time_millis = time::Duration::from_millis(16);
                 sleep(wait_time_millis);
             }
