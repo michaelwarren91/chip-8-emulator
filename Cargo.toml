@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 hex = "0.4"
 sdl2 = "0.38.0"
+rand = "0.9"

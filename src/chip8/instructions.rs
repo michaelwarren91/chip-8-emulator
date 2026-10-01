@@ -77,7 +77,7 @@ pub enum Instruction {
         address: u16,
     },
     JumpWithOffset {
-        offset: u16,
+        address: u16,
     },
     RandomByte {
         destination_register: u8,
@@ -187,7 +187,7 @@ impl fmt::Display for Instruction {
                 register_b,
             } => write!(f, "SNE V{:X}, V{:X}", register_a, register_b),
             Self::LoadIndexRegister { address } => write!(f, "LD I, 0x{:X}", address),
-            Self::JumpWithOffset { offset } => write!(f, "JP V0, 0x{:X}", offset),
+            Self::JumpWithOffset { address } => write!(f, "JP V0, 0x{:X}", address),
             Self::RandomByte {
                 destination_register,
                 mask,

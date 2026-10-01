@@ -14,7 +14,7 @@ impl Display {
 
     pub fn draw_sprite(&mut self, start_x: usize, start_y: usize, sprite: &[u8]) -> bool {
         let mut reset_pixel = false;
-        
+
         for (row_index, row_byte) in sprite.iter().enumerate() {
             let y = (start_y + row_index) % DISPLAY_HEIGHT;
 

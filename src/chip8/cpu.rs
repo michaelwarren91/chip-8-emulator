@@ -1,10 +1,12 @@
+use std::time::Instant;
+
 use super::Display;
 use super::Instruction;
 use super::instruction_handlers;
 
 const MEMORY_SIZE: usize = 4096;
 const PROGRAM_START_ADDRESS: usize = 0x200;
-const FONT_START_ADDRESS: usize = 0x000;
+pub const FONT_START_ADDRESS: usize = 0x000;
 const FONT_DATA: [[u8; 5]; 16] = [
     // Data for the number 0 (1 = pixel on, 0 = pixel off). All following numbers follow the same format
     // 11110000 - 0xF0
@@ -34,21 +36,25 @@ pub struct Cpu {
     // Registers
     pub(super) general_registers: [u8; 16],
     pub(super) index_register: u16,
-    delay_timer: u8,
-    sound_timer: u8,
     pub(super) program_counter: u16,
-    stack_pointer: u8,
+    pub(super) stack_pointer: u8,
 
     // Memory
     pub(super) ram: [u8; MEMORY_SIZE],
-    subroutine_stack: [u16; 16],
+    pub(super) subroutine_stack: [u16; 16],
 
     // Rendering
     pub display: Display,
 
     // Input
-    input_state: u16,
-    input_wait_register: Option<u8>, // Used for the Fx0A instruction
+    pub(super) input_state: u16,
+    pub(super) input_wait_register: Option<u8>, // Used for the Fx0A instruction
+
+    // Timers
+    pub(super) delay_timer: u8,
+    pub(super) sound_timer: u8,
+    last_update_time: Instant,
+    accumulated_time: f64,
 }
 
 impl Cpu {
@@ -75,6 +81,28 @@ impl Cpu {
 
         let instruction = self.decode_instruction(opcode);
         self.execute_instruction(instruction);
+    }
+
+    pub fn step_timers(&mut self) {
+        let now = Instant::now();
+        let elapsed_time = now - self.last_update_time;
+
+        self.accumulated_time += elapsed_time.as_secs_f64();
+        let target_tick_time = 1.0 / 60.0;
+
+        while self.accumulated_time >= target_tick_time {
+            if self.delay_timer > 0 {
+                self.delay_timer -= 1;
+            }
+
+            if self.sound_timer > 0 {
+                self.sound_timer -= 1;
+            }
+
+            self.accumulated_time -= target_tick_time;
+        }
+
+        self.last_update_time = now;
     }
 
     fn write_default_sprite(&mut self, number: usize, rows: [u8; 5]) {
@@ -106,6 +134,19 @@ impl Cpu {
             },
 
             0x1000 => Instruction::Jump { address },
+            0x2000 => Instruction::Call { address },
+            0x3000 => Instruction::SkipIfRegisterEqualsValue {
+                register: x,
+                value: byte,
+            },
+            0x4000 => Instruction::SkipIfRegisterNotEqualsValue {
+                register: x,
+                value: byte,
+            },
+            0x5000 => Instruction::SkipIfRegistersEqual {
+                register_a: x,
+                register_b: y,
+            },
             0x6000 => Instruction::LoadByte {
                 register: x,
                 value: byte,
@@ -114,11 +155,78 @@ impl Cpu {
                 register: x,
                 value: byte,
             },
+            0x8000 => match n {
+                0x0 => Instruction::CopyRegister {
+                    destination_register: x,
+                    source_register: y,
+                },
+                0x1 => Instruction::Or {
+                    destination_register: x,
+                    source_register: y,
+                },
+                0x2 => Instruction::And {
+                    destination_register: x,
+                    source_register: y,
+                },
+                0x3 => Instruction::Xor {
+                    destination_register: x,
+                    source_register: y,
+                },
+                0x4 => Instruction::AddRegisters {
+                    destination_register: x,
+                    source_register: y,
+                },
+                0x5 => Instruction::SubtractRegisters {
+                    destination_register: x,
+                    source_register: y,
+                },
+                0x6 => Instruction::ShiftRight {
+                    destination_register: x,
+                },
+                0x7 => Instruction::SubtractFromRegister {
+                    destination_register: x,
+                    source_register: y,
+                },
+                0xE => Instruction::ShiftLeft {
+                    destination_register: x,
+                },
+                _ => Instruction::Unknown { opcode },
+            },
+            0x9000 => Instruction::SkipIfRegistersNotEqual {
+                register_a: x,
+                register_b: y,
+            },
             0xA000 => Instruction::LoadIndexRegister { address },
+            0xB000 => Instruction::JumpWithOffset { address },
+            0xC000 => Instruction::RandomByte {
+                destination_register: x,
+                mask: byte,
+            },
             0xD000 => Instruction::DrawSprite {
                 x_register: x,
                 y_register: y,
                 height: n,
+            },
+            0xE000 => match byte {
+                0x9E => Instruction::SkipIfKeyPressed { register: x },
+                0xA1 => Instruction::SkipIfKeyNotPressed { register: x },
+                _ => Instruction::Unknown { opcode },
+            },
+            0xF000 => match byte {
+                0x07 => Instruction::ReadDelayTimer {
+                    destination_register: x,
+                },
+                0x0A => Instruction::WaitForKeyPress {
+                    destination_register: x,
+                },
+                0x15 => Instruction::SetDelayTimer { source_register: x },
+                0x18 => Instruction::SetSoundTimer { source_register: x },
+                0x1E => Instruction::AddToIndexRegister { source_register: x },
+                0x29 => Instruction::LoadFontAddress { register: x },
+                0x33 => Instruction::StoreBcd { source_register: x },
+                0x55 => Instruction::StoreRegisters { final_register: x },
+                0x65 => Instruction::LoadRegisters { final_register: x },
+                _ => Instruction::Unknown { opcode },
             },
             _ => Instruction::Unknown { opcode },
         }
@@ -237,8 +345,8 @@ impl Cpu {
                 instruction_handlers::execute_load_index_register(self, address)
             }
 
-            Instruction::JumpWithOffset { offset } => {
-                instruction_handlers::execute_jump_with_offset(self, offset)
+            Instruction::JumpWithOffset { address } => {
+                instruction_handlers::execute_jump_with_offset(self, address)
             }
 
             Instruction::RandomByte {
@@ -304,8 +412,6 @@ impl Default for Cpu {
         let mut cpu = Self {
             general_registers: [0; 16],
             index_register: 0,
-            delay_timer: 0,
-            sound_timer: 0,
             program_counter: 0x200,
             stack_pointer: 0,
 
@@ -316,6 +422,11 @@ impl Default for Cpu {
 
             input_state: 0,
             input_wait_register: None,
+
+            delay_timer: 0,
+            sound_timer: 0,
+            last_update_time: Instant::now(),
+            accumulated_time: 0.0,
         };
 
         for (number, font_data) in FONT_DATA.iter().enumerate().take(0xF) {
