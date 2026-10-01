@@ -52,7 +52,7 @@ pub struct Cpu {
 
     // Timers
     pub(super) delay_timer: u8,
-    pub(super) sound_timer: u8,
+    pub sound_timer: u8,
     last_update_time: Instant,
     accumulated_time: f64,
 }

@@ -1,4 +1,6 @@
+use crate::chip8::Cpu;
 use crate::frontends::display_trait;
+use sdl2::audio::{AudioCallback, AudioDevice, AudioSpecDesired, AudioStatus};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
@@ -11,11 +13,46 @@ const CLEAR_COLOR: sdl2::pixels::Color = Color::RGB(0, 0, 0);
 const WRITE_COLOR: sdl2::pixels::Color = Color::RGB(255, 255, 255);
 const WINDOW_SCALE: u32 = 20;
 
+struct SquareWave {
+    phase: f32,
+    phase_increment: f32,
+}
+
+impl AudioCallback for SquareWave {
+    type Channel = f32;
+
+    fn callback(&mut self, out: &mut [f32]) {
+        for sample in out.iter_mut() {
+            *sample = if self.phase < 0.5 { 0.25 } else { -0.25 };
+
+            self.phase = (self.phase + self.phase_increment) % 1.0;
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct RuntimeFrontend {
     sdl_context: Option<Sdl>,
     canvas: Option<Canvas<Window>>,
     event_pump: Option<EventPump>,
+
+    // Audio
+    audio_device: Option<AudioDevice<SquareWave>>,
+}
+
+impl RuntimeFrontend {
+    pub fn update_audio(&self, sound_timer: u8) {
+        if let Some(audio_device) = &self.audio_device {
+            let status = audio_device.status();
+
+            if sound_timer > 0 && (status == AudioStatus::Stopped || status == AudioStatus::Paused) {
+                audio_device.resume();
+            } 
+            else if sound_timer == 0 && status == AudioStatus::Playing {
+                audio_device.pause();
+            }
+        }
+    }
 }
 
 impl display_trait::Display for RuntimeFrontend {
@@ -35,9 +72,29 @@ impl display_trait::Display for RuntimeFrontend {
         let canvas = window.into_canvas().build().unwrap();
         let event_pump = sdl_context.event_pump().unwrap();
 
+        // Audio stuff
+        let audio_subsystem = sdl_context.audio().unwrap();
+        let desired_spec = AudioSpecDesired {
+            freq: Some(44100),
+            channels: Some(1),
+            samples: Some(1024),
+        };
+
+        let device = audio_subsystem
+            .open_playback(None, &desired_spec, |spec| SquareWave {
+                phase: 0.0,
+                phase_increment: 440.0 / spec.freq as f32,
+            })
+            .expect("Failed to create audio device");
+
         self.sdl_context = Some(sdl_context);
         self.canvas = Some(canvas);
         self.event_pump = Some(event_pump);
+        self.audio_device = Some(device);
+    }
+
+    fn update(&mut self, cpu: &Cpu) {
+        self.update_audio(cpu.sound_timer);
     }
 
     fn render(
