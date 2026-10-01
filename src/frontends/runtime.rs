@@ -9,7 +9,7 @@ use sdl2::{EventPump, Sdl};
 
 const CLEAR_COLOR: sdl2::pixels::Color = Color::RGB(0, 0, 0);
 const WRITE_COLOR: sdl2::pixels::Color = Color::RGB(255, 255, 255);
-const WINDOW_SCALE: u32 = 10;
+const WINDOW_SCALE: u32 = 20;
 
 #[derive(Default)]
 pub struct RuntimeFrontend {
