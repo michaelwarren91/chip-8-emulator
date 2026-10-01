@@ -105,11 +105,9 @@ pub(super) fn execute_draw_sprite(cpu: &mut Cpu, x_register: u8, y_register: u8,
     let y = cpu.general_registers[y_register as usize];
 
     let start = cpu.index_register as usize;
-    let sprite = (start..(start + height as usize))
-        .map(|i| cpu.ram[i])
-        .collect();
+    let sprite = &cpu.ram[start..(start + height as usize)];
 
-    let pixels_erased = cpu.display.draw_sprite(x as usize, y as usize, &sprite);
+    let pixels_erased = cpu.display.draw_sprite(x as usize, y as usize, sprite);
     cpu.general_registers[15] = if pixels_erased { 1 } else { 0 };
 }
 

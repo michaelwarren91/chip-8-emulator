@@ -11,6 +11,7 @@ const CLEAR_COLOR: sdl2::pixels::Color = Color::RGB(0, 0, 0);
 const WRITE_COLOR: sdl2::pixels::Color = Color::RGB(255, 255, 255);
 const WINDOW_SCALE: u32 = 10;
 
+#[derive(Default)]
 pub struct RuntimeFrontend {
     sdl_context: Option<Sdl>,
     canvas: Option<Canvas<Window>>,
@@ -92,20 +93,10 @@ impl display_trait::Display for RuntimeFrontend {
     }
 
     fn should_step_cpu(&self) -> bool {
-        return true;
+        true
     }
 
     fn deinitialize(&mut self) {
         // Do nothing for now
-    }
-}
-
-impl Default for RuntimeFrontend {
-    fn default() -> Self {
-        Self {
-            sdl_context: None,
-            canvas: None,
-            event_pump: None,
-        }
     }
 }

@@ -102,10 +102,10 @@ impl Cpu {
             0x0000 => match opcode {
                 0x00E0 => Instruction::ClearScreen,
                 0x00EE => Instruction::Return,
-                _ => Instruction::SystemCall { address: address },
+                _ => Instruction::SystemCall { address },
             },
 
-            0x1000 => Instruction::Jump { address: address },
+            0x1000 => Instruction::Jump { address },
             0x6000 => Instruction::LoadByte {
                 register: x,
                 value: byte,
@@ -114,13 +114,13 @@ impl Cpu {
                 register: x,
                 value: byte,
             },
-            0xA000 => Instruction::LoadIndexRegister { address: address },
+            0xA000 => Instruction::LoadIndexRegister { address },
             0xD000 => Instruction::DrawSprite {
                 x_register: x,
                 y_register: y,
                 height: n,
             },
-            _ => Instruction::Unknown { opcode: opcode },
+            _ => Instruction::Unknown { opcode },
         }
     }
 
