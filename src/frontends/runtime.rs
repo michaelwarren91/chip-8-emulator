@@ -79,12 +79,20 @@ impl RuntimeFrontend {
                         keycode: Some(Keycode::Escape),
                         ..
                     } => self.should_exit = true,
-                    Event::KeyDown { keycode, repeat: false, .. } if keycode.is_some() => {
+                    Event::KeyDown {
+                        keycode,
+                        repeat: false,
+                        ..
+                    } if keycode.is_some() => {
                         if let Some(chip8key) = Self::keycode_to_chip8key(keycode.unwrap()) {
                             self.key_events.push((chip8key, true));
                         }
-                    },
-                    Event::KeyUp { keycode, repeat: false, .. } => {
+                    }
+                    Event::KeyUp {
+                        keycode,
+                        repeat: false,
+                        ..
+                    } => {
                         if let Some(chip8key) = Self::keycode_to_chip8key(keycode.unwrap()) {
                             self.key_events.push((chip8key, false));
                         }

@@ -122,10 +122,10 @@ impl Cpu {
         let key_mask = (1 << key) as u16;
         self.input_state &= !key_mask;
 
-        if let Some(release_key) = self.input_wait_release_key {
-            if release_key == key {
-                self.input_wait_release_key = None
-            }
+        if let Some(release_key) = self.input_wait_release_key
+            && release_key == key
+        {
+            self.input_wait_release_key = None
         }
     }
 

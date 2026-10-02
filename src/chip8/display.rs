@@ -39,17 +39,4 @@ impl Display {
     pub fn get_framebuffer(&self) -> &[bool; DISPLAY_WIDTH * DISPLAY_HEIGHT] {
         &self.framebuffer
     }
-
-    pub fn debug_print_buffer(&self) {
-        let buffer_len = DISPLAY_WIDTH * DISPLAY_HEIGHT;
-
-        for pixel in 0..buffer_len {
-            let value = self.framebuffer[pixel] as u8;
-            print!("{value}");
-
-            if (pixel + 1) % DISPLAY_WIDTH == 0 {
-                println!();
-            }
-        }
-    }
 }
