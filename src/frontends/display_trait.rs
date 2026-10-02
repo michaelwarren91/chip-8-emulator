@@ -11,4 +11,5 @@ pub trait Display {
     fn should_exit(&mut self) -> bool;
     fn should_step_cpu(&self) -> bool;
     fn deinitialize(&mut self);
+    fn consume_keyboard_events(&mut self) -> Vec<(u8, bool)>;
 }

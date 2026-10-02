@@ -49,6 +49,7 @@ pub struct Cpu {
     // Input
     pub(super) input_state: u16,
     pub(super) input_wait_register: Option<u8>, // Used for the Fx0A instruction
+    input_wait_release_key: Option<u8>,
 
     // Timers
     pub(super) delay_timer: u8,
@@ -72,7 +73,7 @@ impl Cpu {
     }
 
     pub fn step(&mut self) {
-        if self.input_wait_register.is_some() {
+        if self.input_wait_register.is_some() || self.input_wait_release_key.is_some() {
             return;
         }
 
@@ -103,6 +104,29 @@ impl Cpu {
         }
 
         self.last_update_time = now;
+    }
+
+    pub fn handle_key_pressed(&mut self, key: u8) {
+        let key_mask = (1 << key) as u16;
+        self.input_state |= key_mask;
+
+        if let Some(register) = self.input_wait_register {
+            self.general_registers[register as usize] = key;
+
+            self.input_wait_release_key = Some(key);
+            self.input_wait_register = None
+        }
+    }
+
+    pub fn handle_key_released(&mut self, key: u8) {
+        let key_mask = (1 << key) as u16;
+        self.input_state &= !key_mask;
+
+        if let Some(release_key) = self.input_wait_release_key {
+            if release_key == key {
+                self.input_wait_release_key = None
+            }
+        }
     }
 
     fn write_default_sprite(&mut self, number: usize, rows: [u8; 5]) {
@@ -422,6 +446,7 @@ impl Default for Cpu {
 
             input_state: 0,
             input_wait_register: None,
+            input_wait_release_key: None,
 
             delay_timer: 0,
             sound_timer: 0,
