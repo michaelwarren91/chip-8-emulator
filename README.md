@@ -1,5 +1,5 @@
 # chip8-emulator
-A Rust implementation of the Chip8 Emulator
+A Rust implementation of the Chip 8 Emulator
 
 ## How to Run
 Run the following command in the terminal
