@@ -32,7 +32,7 @@ const FONT_DATA: [[u8; 5]; 16] = [
     [0xF0, 0x80, 0xF0, 0x80, 0x80], // F
 ];
 
-pub struct Cpu {
+pub struct Chip8 {
     // Registers
     pub(super) general_registers: [u8; 16],
     pub(super) index_register: u16,
@@ -58,7 +58,7 @@ pub struct Cpu {
     accumulated_time: f64,
 }
 
-impl Cpu {
+impl Chip8 {
     pub fn load_rom(&mut self, rom_data: &[u8]) {
         let max_program_size = 0xFFF - PROGRAM_START_ADDRESS;
         let rom_size = rom_data.len();
@@ -431,7 +431,7 @@ impl Cpu {
     }
 }
 
-impl Default for Cpu {
+impl Default for Chip8 {
     fn default() -> Self {
         let mut cpu = Self {
             general_registers: [0; 16],
@@ -468,13 +468,13 @@ mod tests {
 
     #[test]
     fn default_cpu_program_counter() {
-        let cpu = Cpu::default();
+        let cpu = Chip8::default();
         assert_eq!(cpu.program_counter, 0x200);
     }
 
     #[test]
     fn defualt_cpu_font_data() {
-        let cpu = Cpu::default();
+        let cpu = Chip8::default();
         let font_size = 5;
 
         for (number, font_data) in FONT_DATA.iter().enumerate().take(0xF) {
@@ -488,7 +488,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn load_program_invalid_size() {
-        let mut cpu = Cpu::default();
+        let mut cpu = Chip8::default();
 
         // Create dummy program that takes the entire RAM length
         let program = [0u8; MEMORY_SIZE];

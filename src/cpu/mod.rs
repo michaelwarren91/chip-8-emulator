@@ -1,8 +1,9 @@
-mod cpu;
+mod chip8;
 mod display;
 mod instruction_handlers;
 mod instructions;
+pub mod specs;
 
-pub use cpu::Cpu;
+pub use chip8::Chip8;
 use display::Display;
 pub use instructions::Instruction;
