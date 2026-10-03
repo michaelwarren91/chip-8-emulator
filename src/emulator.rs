@@ -47,8 +47,6 @@ impl Emulator {
             let wait_time_micros = time::Duration::from_micros(1666);
             sleep(wait_time_micros);
         }
-
-        self.deinitialize();
     }
 
     fn initialize(&mut self, rom: &Rom) {
@@ -103,11 +101,6 @@ impl Emulator {
     }
 
     fn update_display(&mut self) {
-        // Render the framebuffer to the display
         self.frontend.render(&self.cpu);
-    }
-
-    fn deinitialize(&mut self) {
-        // Nothing right now
     }
 }
