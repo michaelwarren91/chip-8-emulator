@@ -1,4 +1,4 @@
-# chip8-emulator
+# chip-8-emulator
 A Rust implementation of the Chip 8 Emulator
 
 ## How to Run
