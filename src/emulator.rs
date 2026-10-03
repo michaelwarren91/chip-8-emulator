@@ -44,7 +44,7 @@ impl Emulator {
 
             // TODO: see how long it takes to finish updating everything, then
             // wait for the remaning amount of time (1.6 ms - time taken).
-            let wait_time_micros = time::Duration::from_micros(1666);
+            let wait_time_micros = time::Duration::from_micros(1200);
             sleep(wait_time_micros);
         }
     }

@@ -259,7 +259,7 @@ impl Chip8 {
     fn execute_instruction(&mut self, instruction: Instruction) {
         match instruction {
             Instruction::Unknown { opcode } => {
-                panic!("Unknown instruction reached: opcode={opcode}")
+                panic!("Unknown instruction reached: opcode=0x{:04X}", opcode)
             }
 
             Instruction::SystemCall { address } => {
