@@ -2,6 +2,7 @@ use std::time::Instant;
 
 use super::Display;
 use super::Instruction;
+use super::Keypad;
 use super::instruction_handlers;
 
 const MEMORY_SIZE: usize = 4096;
@@ -47,7 +48,7 @@ pub struct Chip8 {
     pub display: Display,
 
     // Input
-    pub(super) input_state: u16,
+    keypad: Keypad,
     pub(super) input_wait_register: Option<u8>, // Used for the Fx0A instruction
     input_wait_release_key: Option<u8>,
 
@@ -107,8 +108,7 @@ impl Chip8 {
     }
 
     pub fn handle_key_pressed(&mut self, key: u8) {
-        let key_mask = (1 << key) as u16;
-        self.input_state |= key_mask;
+        self.keypad.press_key(key);
 
         if let Some(register) = self.input_wait_register {
             self.general_registers[register as usize] = key;
@@ -119,14 +119,17 @@ impl Chip8 {
     }
 
     pub fn handle_key_released(&mut self, key: u8) {
-        let key_mask = (1 << key) as u16;
-        self.input_state &= !key_mask;
+        self.keypad.release_key(key);
 
         if let Some(release_key) = self.input_wait_release_key
             && release_key == key
         {
             self.input_wait_release_key = None
         }
+    }
+
+    pub(super) fn get_keypad(&mut self) -> &mut Keypad {
+        &mut self.keypad
     }
 
     fn write_default_sprite(&mut self, number: usize, rows: [u8; 5]) {
@@ -444,7 +447,7 @@ impl Default for Chip8 {
 
             display: Display::new(),
 
-            input_state: 0,
+            keypad: Keypad::default(),
             input_wait_register: None,
             input_wait_release_key: None,
 

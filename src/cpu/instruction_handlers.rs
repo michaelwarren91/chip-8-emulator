@@ -196,18 +196,18 @@ pub(super) fn execute_draw_sprite(cpu: &mut Chip8, x_register: u8, y_register: u
 
 pub(super) fn execute_skip_if_key_pressed(cpu: &mut Chip8, register: u8) {
     let key = cpu.general_registers[register as usize];
-    let key_mask = 1 << key;
+    let keypad = cpu.get_keypad();
 
-    if cpu.input_state & key_mask > 0 {
+    if keypad.is_key_pressed(key) {
         cpu.program_counter += 2;
     }
 }
 
 pub(super) fn execute_skip_if_key_not_pressed(cpu: &mut Chip8, register: u8) {
     let key = cpu.general_registers[register as usize];
-    let key_mask = 1 << key;
+    let keypad = cpu.get_keypad();
 
-    if cpu.input_state & key_mask == 0 {
+    if !keypad.is_key_pressed(key) {
         cpu.program_counter += 2;
     }
 }
@@ -217,18 +217,13 @@ pub(super) fn execute_read_delay_timer(cpu: &mut Chip8, destination_register: u8
 }
 
 pub(super) fn execute_wait_for_key_press(cpu: &mut Chip8, destination_register: u8) {
-    // Loop through all keys from 0 to F. If any key is pressed we'll use that key
-    // and set the register value. Otherwise, we'll enter a waiting state
-    for key in 0..=15 {
-        let key_mask = 1 << key;
-
-        if cpu.input_state & key_mask > 0 {
-            cpu.general_registers[destination_register as usize] = key;
-            return;
-        }
+    // If any key is pressed, we can immediately set that to the register.
+    // Otherwise, we'll enter a waiting state
+    if let Some(pressed_key) = cpu.get_keypad().get_any_key_pressed() {
+        cpu.general_registers[destination_register as usize] = pressed_key;
+    } else {
+        cpu.input_wait_register = Some(destination_register)
     }
-
-    cpu.input_wait_register = Some(destination_register);
 }
 
 pub(super) fn execute_set_delay_timer(cpu: &mut Chip8, source_register: u8) {
